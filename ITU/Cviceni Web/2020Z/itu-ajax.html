@@ -1,0 +1,116 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+
+<html>
+
+<head>
+  <title> ITU ajax </title>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+  <style type="text/css">
+    div,
+    input {
+      margin: 10px;
+    }
+
+    p {
+      margin: 0;
+    }
+  </style>
+</head>
+
+<body>
+
+  <div id="chatArea" style="height: 300px; border: solid #aaa 1px; overflow:auto;"></div>
+
+  <form onsubmit="return uploadData()">
+    <input type="text" id="newMessageString">
+    <input type="submit" value="send">
+  </form>
+
+  <div id="status" style="border: solid #aaa 1px; ">&nbsp;</div>
+
+
+  <script type="text/javascript">
+
+    /***
+      * XMLHttpRequest object constructor (for compatibility with various browsers)
+      */
+
+    function createXmlHttpRequestObject() {
+      var xmlhttp;
+      try {
+        xmlHttp = new XMLHttpRequest(); //should work on all browsers except IE6 or older
+      } catch (e) {
+        try {
+          xmlHttp = new ActiveXObject("Microsoft.XMLHttp"); //browser is IE6 or older
+        } catch (e) {
+          // ignore error
+        }
+      }
+      if (!xmlHttp) {
+        alert("Error creating the XMLHttpRequest object.");
+      } else {
+        return xmlHttp;
+      }
+    }
+
+    function uploadData() {
+
+      try {
+        var xmlHttp = createXmlHttpRequestObject();
+        xmlHttp.open("POST", "http://pckiss.fit.vutbr.cz/itu/api.php", true);
+        xmlHttp.setRequestHeader("Content-Type", "application/x-www-form-urlencoded;");
+        xmlHttp.onreadystatechange = function() {
+        if ((request.readyState == READY_STATE_FINISHED) && (request.status == STATUS_OK)) {
+                 downloadData();
+            }
+        }
+        var data = document.getElementById("newMessageString").value;
+        xmlHttp.send("user=xzakji02&data=" + data);
+       
+      } catch (e) {
+        alert(e.toString());
+      }
+
+      return false; // to avoid default form submit behavior 
+    }
+
+    function downloadData() {
+
+      var xmlHttp = createXmlHttpRequestObject();
+      xmlHttp.open("GET", "http://pckiss.fit.vutbr.cz/itu/api.php", true);
+      xmlHttp.onreadystatechange = () => {
+        if (xmlHttp.readyState === XMLHttpRequest.DONE) {
+          if (xmlHttp.status === 0 || (xmlHttp.status >= 200 && xmlHttp.status < 400)) {
+            writeNewData(JSON.parse(xmlHttp.responseText));
+          } else
+            console.log("error");
+        }
+      }
+      xmlHttp.send();
+    }
+
+    var id = 0;
+    var newMessages = true;
+
+    function writeNewData(jsonObj) {
+      jsonObj.forEach(obj => {
+        if (id < obj.id) {
+          if (newMessages) {
+            document.getElementById("status").innerHTML = " ";
+            newMessages = false;
+          }
+          document.getElementById("chatArea").innerHTML += "<p>" + obj.id + ": " + obj.dts + ", " + obj.login + ": " + obj.cnt + "</p>";
+          document.getElementById("status").innerHTML += obj.id + " ";
+          id = obj.id;
+        }
+      });
+      newMessages = true;
+      var objDiv = document.getElementById("chatArea");
+      objDiv.scrollTop = objDiv.scrollHeight;
+    }
+
+    setInterval(downloadData, 3000);
+    
+  </script>
+
+</html>
